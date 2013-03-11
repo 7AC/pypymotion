@@ -3,7 +3,7 @@ pypymotion
 
 Python [Motion](http://www.lavrsen.dk/foswiki/bin/view/Motion/WebHome) event handler. It allows Motion to send emails with a preview of the pictures and a link to the corresponding video.
 It can also disable itself when you're home if you want it to, by detecting the MAC addresses of some devices (e.g., your cell phones).
-
+Take a look at the [config file](https://github.com/7AC/pypymotion/blob/master/pypymotion.cfg) for more details on the features and tweaks.
 
 Dependencies
 ------------

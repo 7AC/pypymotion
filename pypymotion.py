@@ -91,7 +91,7 @@ def sendEmail( attachment ):
       embeddedPics += '<img src="cid:%s" width="640">' % os.path.basename( p )
    html = '<html><head><title>motion</title></head><body>'
    if videoUrl and playIcon:
-      html += '<a href="%s/%s"><img src="cid:%s" height="60" align="left"></a>' \
+      html += '<a href="%s/%s"><img src="cid:%s" height="70" align="left"></a>' \
 	      % ( videoUrl, os.path.basename( attachment ), os.path.basename( playIcon ) )
    html += '<p>&nbsp;&nbsp;&nbsp;Duration: %ss</p>' % duration
    html += '<p>&nbsp;&nbsp;&nbsp;Available space: %s</p>' % df()

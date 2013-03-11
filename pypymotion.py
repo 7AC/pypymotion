@@ -16,9 +16,13 @@ attachVideo = config.getint( 'General', 'attach_video' )
 picturesDir = config.get( 'General', 'pictures_dir' )
 picturesExt = config.get( 'General', 'pictures_ext' )
 postCapture = config.getint( 'General', 'post_capture' )
-videoUrl = config.get( 'Email', 'video_url' )
 emailFrom = config.get( 'Email', 'email_from' )
 emailTo = config.get( 'Email', 'email_to' )
+videoUrl = None
+try:
+   videoUrl = config.get( 'Email', 'video_url' )
+except ConfigParser.NoOptionError:
+   pass
 playIcon = None
 try:
    playIcon = config.get( 'Email', 'play_icon' )
@@ -85,17 +89,19 @@ def sendEmail( attachment ):
    embeddedPics = ''
    for p in pics:
       embeddedPics += '<img src="cid:%s" width="640">' % os.path.basename( p )
-   html = '''<html><head><title>motion</title></head><body>
-<a href="%s/%s">
-<img src="cid:%s" height="60" align="left"></a>
-<p>&nbsp;&nbsp;&nbsp;Duration: %ss</p>
-<p>&nbsp;&nbsp;&nbsp;Available space: %s</p>
-<br>%s</body></html>''' % ( videoUrl, os.path.basename( attachment ),
-      			    os.path.basename( playIcon ), duration, df(), embeddedPics )
+   html = '<html><head><title>motion</title></head><body>'
+   if videoUrl and playIcon:
+      html += '<a href="%s/%s"><img src="cid:%s" height="60" align="left"></a>' \
+	      % ( videoUrl, os.path.basename( attachment ), os.path.basename( playIcon ) )
+   html += '<p>&nbsp;&nbsp;&nbsp;Duration: %ss</p>' % duration
+   html += '<p>&nbsp;&nbsp;&nbsp;Available space: %s</p>' % df()
+   html += '<br>%s</body></html>' % embeddedPics
 
    body = MIMEText( html, 'html' )
 
-   for p in pics + [ playIcon ]:
+   if playIcon:
+      pics.append( playIcon )
+   for p in pics:
       fp = open( p, 'rb' )
       img = MIMEImage( fp.read() )
       fp.close()

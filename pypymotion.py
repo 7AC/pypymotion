@@ -31,7 +31,7 @@ except ConfigParser.NoOptionError:
 presenceMacs = []
 network = None
 try:
-   presenceMacs = config.get( 'Presence', 'presence_macs' )
+   presenceMacs = config.get( 'Presence', 'presence_macs' ).split( ',' )
    network = config.get( 'Presence', 'network' )
 except ConfigParser.NoOptionError:
    pass

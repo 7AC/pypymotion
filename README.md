@@ -15,8 +15,8 @@ Dependencies
 Installation
 ------------
 ```bash
-echo 'on_movie_end /path/to/pypymotion.py %f' >> /etc/motion/motion.conf
 mkdir /etc/pypymotion
 cp pypymotion.cfg /etc/pypymotion
 $EDITOR /etc/pypymotion/pypymotion.cfg # customize the settings
+echo 'on_movie_end /path/to/pypymotion.py %f' >> /etc/motion/motion.conf
 /etc/init.d/motion restart```

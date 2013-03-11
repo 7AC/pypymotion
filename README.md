@@ -9,7 +9,7 @@ Dependencies
 ------------
 * motion
 * sendmail
-* arp-scan
+* arp-scan (optional)
 
 
 Installation

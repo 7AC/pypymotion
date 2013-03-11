@@ -14,9 +14,9 @@ Dependencies
 
 Installation
 ------------
-Add the following to your motion.conf:
-```on_movie_end /path/to/pypymotion.py %f```
-
-Create /etc/pypymotion and copy pypymotion.cfg to it, edit the settings.
-
-Restart motion.
+```bash
+echo 'on_movie_end /path/to/pypymotion.py %f' >> /etc/motion/motion.conf
+mkdir /etc/pypymotion
+cp pypymotion.cfg /etc/pypymotion
+$EDITOR /etc/pypymotion/pypymotion.cfg # customize the settings
+/etc/init.d/motion restart```

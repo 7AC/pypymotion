@@ -15,6 +15,7 @@ config.read( os.path.expanduser( configFile ) )
 attachVideo = config.getint( 'General', 'attach_video' )
 picturesDir = config.get( 'General', 'pictures_dir' )
 picturesExt = config.get( 'General', 'pictures_ext' )
+preCapture = config.getint( 'General', 'pre_capture' )
 postCapture = config.getint( 'General', 'post_capture' )
 emailFrom = config.get( 'Email', 'email_from' )
 emailTo = config.get( 'Email', 'email_to' )
@@ -74,47 +75,47 @@ def videoDuration( video ):
       sys.stderr.write( '%s not found\n' % video )
       sys.exit( 1 )
 
-def pictures( dirpath ):
-   # get all entries in the directory w/ stats
-   entries = ( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) if fn.endswith( picturesExt ) )
-   entries = ( ( os.stat( path )[ ST_CTIME ], path ) for path in entries )
+def pictures( dirpath, baseName ):
+   # Consider only the id (22) in 22-20130312074653-00
+   baseName = baseName[ 0 : 2 ]
+   pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) if fn.endswith( picturesExt ) and \
+	 									 fn.startswith( baseName ) )
+   return pics[ preCapture : preCapture + 5 ]
 
-   # return the last N pictures before the postCapture ones
-   return [ path for _, path in sorted( entries )[ - postCapture - 5 : - postCapture ] ]
-
-def convertForIos( path, video ):
-   baseName, _ = os.path.splitext( video )
-   iosVideo = path + '/' + baseName + '.mov'
-   subprocess.Popen( [ 'ffmpeg', '-i', video, iosVideo ], stdout=subprocess.PIPE,
+def convertForIos( src, dst ):
+   subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
 	 	     stderr=subprocess.STDOUT ).stdout.readlines()
-   return iosVideo
 
 def sendEmail( attachment ):
-   #print '[%s] %s\n' % ( datetime.now(), attachment )
    msg = MIMEMultipart( 'alternative' )
    msg[ 'Subject' ] = 'motion has a video for you'
    msg[ 'From' ] = emailFrom
    msg[ 'To' ] = emailTo
 
+   originalAttachment = attachment
    if iosCompatible:
-      attachment = convertForIos( *os.path.split( attachment ) )
+      attachmentDir, attachmentFile = os.path.split( attachment )
+      baseName, _ = os.path.splitext( attachmentFile )
+      iosVideo = attachmentDir + '/' + baseName + '.mov'
    duration = videoDuration( attachment )
-   pics = pictures( picturesDir )
+   if iosCompatible:
+      attachment = iosVideo
+   pics = pictures( picturesDir, baseName )
    embeddedPics = ''
    for p in pics:
       embeddedPics += '<div><img height="480" width="640" apple-width="yes" apple-height="yes" src="cid:%s"></div>' \
 	    	      % os.path.basename( p )
 
-'''
-<html>
-<body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">
-<span contenteditable="true" apple-content-name="body" style="display: block; ">
-Chris Writes Mail Template
-</span>
-<img src="http://www.chriswrites.com/wp-content/uploads/Article-12-Mountain-Lion-Icon.jpg">
-</body>
-</html>
-'''
+   '''
+   <html>
+   <body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">
+   <span contenteditable="true" apple-content-name="body" style="display: block; ">
+   Chris Writes Mail Template
+   </span>
+   <img src="http://www.chriswrites.com/wp-content/uploads/Article-12-Mountain-Lion-Icon.jpg">
+   </body>
+   </html>
+   '''
 
    html = '<html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head>'
    html += '<body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">'
@@ -149,6 +150,8 @@ Chris Writes Mail Template
    smtp = smtplib.SMTP( "localhost" )
    smtp.sendmail( msg[ 'From' ], msg[ 'To' ], msg.as_string() )
    smtp.quit()
+   if iosCompatible:
+      convertForIos( originalAttachment, iosVideo )
 
 def main():
    if len( sys.argv ) != 2:

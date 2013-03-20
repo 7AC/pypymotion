@@ -152,37 +152,19 @@ def sendEmail( attachment ):
       attachment = iosVideo
    pics = pictures( picturesDir, baseName )
    embeddedPics = ''
-   for p in pics:
-      embeddedPics += '<div><img height="480" width="640" apple-width="yes" apple-height="yes" src="cid:%s"></div>' \
-	    	      % os.path.basename( p )
-
-   '''
-   <html>
-   <body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">
-   <span contenteditable="true" apple-content-name="body" style="display: block; ">
-   Chris Writes Mail Template
-   </span>
-   <img src="http://www.chriswrites.com/wp-content/uploads/Article-12-Mountain-Lion-Icon.jpg">
-   </body>
-   </html>
-   '''
-
    html = '<html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head>'
    html += '<body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">'
    if videoUrl and playIcon:
-      html += '<a href="%s/%s"><img src="cid:%s" height="48" width="48" apple-width="yes" apple-height="yes"></a>' \
-	      % ( videoUrl, os.path.basename( attachment ), os.path.basename( playIcon ) )
+      html += '<a href="%s/%s"><img src="%s/%s" height="48" width="48"></a>' \
+	      % ( videoUrl, os.path.basename( attachment ), videoUrl,
+	      	  os.path.basename( playIcon ) )
    html += '<div>Duration: %ss</div>' % duration
    html += '<div>Available space: %s</div>' % df()
-   html += '<div><br></div><div>'
-
-   html += embeddedPics + '</body></html>'
+   html += '</body></html>'
 
    body = MIMEText( html, 'html' )
    msg.attach( body )
 
-   if playIcon:
-      pics.append( playIcon )
    for p in pics:
       fp = open( p, 'rb' )
       img = MIMEImage( fp.read() )

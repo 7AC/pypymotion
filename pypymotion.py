@@ -8,17 +8,26 @@ from email.mime.application import MIMEApplication
 from stat import S_ISREG, ST_CTIME, ST_MODE
 from datetime import datetime
 import ConfigParser
+import findmyiphone
 
 configFile = '/etc/pypymotion/pypymotion.cfg'
 config = ConfigParser.ConfigParser( allow_no_value=True )
-config.read( os.path.expanduser( configFile ) )
+config.read( configFile )
 attachVideo = config.getint( 'General', 'attach_video' )
 picturesDir = config.get( 'General', 'pictures_dir' )
 picturesExt = config.get( 'General', 'pictures_ext' )
 preCapture = config.getint( 'General', 'pre_capture' )
 postCapture = config.getint( 'General', 'post_capture' )
 emailFrom = config.get( 'Email', 'email_from' )
+emailPassword = config.get( 'Email', 'email_password' )
 emailTo = config.get( 'Email', 'email_to' )
+# TODO: get rid of these try blocks
+home = None
+try:
+   home = { 'latitude' : config.get( 'General', 'home_lat' ),
+   	    'longitude' : config.get( 'General', 'home_lon' ) }
+except ConfigParser.NoOptionError:
+   pass
 videoUrl = None
 try:
    videoUrl = config.get( 'Email', 'video_url' )
@@ -37,15 +46,31 @@ except ConfigParser.NoOptionError:
 presenceMacs = []
 network = None
 try:
-   presenceMacs = config.get( 'Presence', 'presence_macs' ).split( ',' )
-   network = config.get( 'Presence', 'network' )
-except ConfigParser.NoOptionError:
+   presenceMacs = config.get( 'ARP', 'presence_macs' ).split( ',' )
+   network = config.get( 'ARP', 'network' )
+except ConfigParser.NoSectionError, ConfigParser.NoOptionError:
    pass
-
+iCloudSettings = []
+try:
+   iCloudSettings = config.options( 'iCloud' )
+except ConfigParser.NoSectionError:
+   pass
+fmiAccounts = []
+for i in iCloudSettings:
+   subConfig = ConfigParser.ConfigParser( allow_no_value=True )
+   subConfig.optionxform = str
+   subConfig.read( i )
+   account = { 'username' : subConfig.get( 'Account', 'username' ),
+   	       'password' : subConfig.get( 'Account', 'password' ),
+	       'devices' : [] }
+   for device in subConfig.options( 'Devices' ):
+      account[ 'devices' ].append( device.strip() )
+   fmiAccounts.append( account )
+   
 def usage():
    return 'usage: %s <file>\n' % os.path.basename( sys.argv[ 0 ] )
 
-def userIsHome():
+def arpScan():
    if not network or not presenceMacs:
       return False
    result = subprocess.Popen( [ 'sudo', 'arp-scan', network ],
@@ -54,7 +79,32 @@ def userIsHome():
    for addr in result:
       for i in presenceMacs:
 	 if i in addr:
+	    print i, "is home"
 	    return True
+   return False
+
+def findIphones():
+   if not home:
+      return False
+   for fmiAccount in fmiAccounts:
+      fmi = findmyiphone.FindMyIPhone( fmiAccount[ 'username' ],
+      				       fmiAccount[ 'password' ] )
+      for i, device in enumerate( fmi.devices ):
+      	 if device.name in fmiAccount[ 'devices' ]:
+	    try:
+               location = fmi.locate( i, max_wait=90 )
+	    except Exception:
+	       print 'No location for', device.name
+	    if location:
+	       for x in [ 'latitude', 'longitude' ]:
+	          distanceFromHome = abs( location[ x ] - home[ x ] )
+	          if distanceFromHome <= location[ 'accuracy' ]:
+		     print device.name, 'is home'
+		     return True
+		  else:
+		     print device.name, 'is', distanceFromHome, 'far'
+	    else:
+	       print 'No location for', device.name
    return False
 
 def df():
@@ -83,11 +133,13 @@ def pictures( dirpath, baseName ):
    return pics[ preCapture : preCapture + 5 ]
 
 def convertForIos( src, dst ):
+   print 'Converting to', dst
    subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
 	 	     stderr=subprocess.STDOUT ).stdout.readlines()
+   os.remove( src )
 
 def sendEmail( attachment ):
-   msg = MIMEMultipart( 'alternative' )
+   msg = MIMEMultipart()
    msg[ 'Subject' ] = 'motion has a video for you'
    msg[ 'From' ] = emailFrom
    msg[ 'To' ] = emailTo
@@ -129,6 +181,7 @@ def sendEmail( attachment ):
    html += embeddedPics + '</body></html>'
 
    body = MIMEText( html, 'html' )
+   msg.attach( body )
 
    if playIcon:
       pics.append( playIcon )
@@ -139,17 +192,26 @@ def sendEmail( attachment ):
       img.add_header( 'Content-ID', '<%s>' % os.path.basename( p ) )
       msg.attach( img )
 
-   msg.attach( body )
-
    if attachVideo:
       video = MIMEApplication( open( attachment, 'rb' ).read() )
       video.add_header( 'Content-Disposition', 'attachment', filename=os.path.basename( attachment ) )
       video.add_header( 'Content-ID', os.path.basename( attachment ) )
       msg.attach( video )
 
-   smtp = smtplib.SMTP( "localhost" )
-   smtp.sendmail( msg[ 'From' ], msg[ 'To' ], msg.as_string() )
-   smtp.quit()
+   # Add an option for this
+   mailServer = smtplib.SMTP( 'smtp.gmail.com', 587 )
+   mailServer.ehlo()
+   mailServer.starttls()
+   mailServer.ehlo()
+   mailServer.login( emailFrom, emailPassword )
+   mailServer.sendmail( emailFrom, emailTo, msg.as_string() )
+   mailServer.close()
+
+# This worked with sendmail
+#   smtp = smtplib.SMTP( "localhost" )
+#   print 'Sending email'
+#   smtp.sendmail( msg[ 'From' ], msg[ 'To' ], msg.as_string() )
+#   smtp.quit()
    if iosCompatible:
       convertForIos( originalAttachment, iosVideo )
 
@@ -157,7 +219,7 @@ def main():
    if len( sys.argv ) != 2:
       print usage()
       sys.exit( 1 )
-   if not userIsHome():
+   if not findIphones() or not arpScan():
       sendEmail( sys.argv[ 1 ] )
 
 if __name__ == "__main__":

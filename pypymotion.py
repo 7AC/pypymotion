@@ -21,11 +21,13 @@ postCapture = config.getint( 'General', 'post_capture' )
 emailFrom = config.get( 'Email', 'email_from' )
 emailPassword = config.get( 'Email', 'email_password' )
 emailTo = config.get( 'Email', 'email_to' )
+smtpAddress = config.get( 'Email', 'smtp_address' )
+smtpPort = config.getint( 'Email', 'smtp_port' )
 # TODO: get rid of these try blocks
 home = None
 try:
-   home = { 'latitude' : config.get( 'General', 'home_lat' ),
-   	    'longitude' : config.get( 'General', 'home_lon' ) }
+   home = { 'latitude' : config.getfloat( 'General', 'home_lat' ),
+   	    'longitude' : config.getfloat( 'General', 'home_lon' ) }
 except ConfigParser.NoOptionError:
    pass
 videoUrl = None
@@ -79,7 +81,6 @@ def arpScan():
    for addr in result:
       for i in presenceMacs:
 	 if i in addr:
-	    print i, "is home"
 	    return True
    return False
 
@@ -91,18 +92,16 @@ def findIphones():
       				       fmiAccount[ 'password' ] )
       for i, device in enumerate( fmi.devices ):
       	 if device.name in fmiAccount[ 'devices' ]:
+	    location = None
 	    try:
                location = fmi.locate( i, max_wait=90 )
 	    except Exception:
 	       print 'No location for', device.name
 	    if location:
 	       for x in [ 'latitude', 'longitude' ]:
-	          distanceFromHome = abs( location[ x ] - home[ x ] )
+	          distanceFromHome = abs( location[ x ] - home[ x ] ) * 10000000000
 	          if distanceFromHome <= location[ 'accuracy' ]:
-		     print device.name, 'is home'
 		     return True
-		  else:
-		     print device.name, 'is', distanceFromHome, 'far'
 	    else:
 	       print 'No location for', device.name
    return False
@@ -133,7 +132,6 @@ def pictures( dirpath, baseName ):
    return pics[ preCapture : preCapture + 5 ]
 
 def convertForIos( src, dst ):
-   print 'Converting to', dst
    subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
 	 	     stderr=subprocess.STDOUT ).stdout.readlines()
    os.remove( src )
@@ -199,7 +197,7 @@ def sendEmail( attachment ):
       msg.attach( video )
 
    # Add an option for this
-   mailServer = smtplib.SMTP( 'smtp.gmail.com', 587 )
+   mailServer = smtplib.SMTP( smtpAddress, smtpPort )
    mailServer.ehlo()
    mailServer.starttls()
    mailServer.ehlo()

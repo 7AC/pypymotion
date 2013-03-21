@@ -154,10 +154,12 @@ def sendEmail( attachment ):
    embeddedPics = ''
    html = '<html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head>'
    html += '<body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">'
-   if videoUrl and playIcon:
-      html += '<a href="%s/%s"><img src="%s/%s" height="48" width="48"></a>' \
-	      % ( videoUrl, os.path.basename( attachment ), videoUrl,
-	      	  os.path.basename( playIcon ) )
+   if videoUrl:
+      html += '<a href="%s/%s"><img src="%s/%s" ' % ( videoUrl,
+      						      os.path.basename( attachment ),
+						      videoUrl,
+						      os.path.basename( playIcon ) )
+      html += 'alt="play video" height="48" width="48"></a>'
    html += '<div>Duration: %ss</div>' % duration
    html += '<div>Available space: %s</div>' % df()
    html += '</body></html>'

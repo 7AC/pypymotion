@@ -124,12 +124,15 @@ def videoDuration( video ):
       sys.stderr.write( '%s not found\n' % video )
       sys.exit( 1 )
 
-def pictures( dirpath, baseName ):
+def pictures( dirpath, baseName, all=False ):
    # Consider only the id (22) in 22-20130312074653-00
    baseName = baseName[ 0 : 2 ]
-   pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) if fn.endswith( picturesExt ) and \
-	 									 fn.startswith( baseName ) )
-   return pics[ preCapture : preCapture + 5 ]
+   pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) \
+   					      if fn.endswith( picturesExt ) and \
+					         fn.startswith( baseName ) )
+   if not all:
+      return pics[ preCapture : preCapture + 5 ]
+   return pics
 
 def convertForIos( src, dst ):
    subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
@@ -201,8 +204,15 @@ def main():
    if len( sys.argv ) != 2:
       print usage()
       sys.exit( 1 )
-   if not findIphones() or not arpScan():
-      sendEmail( sys.argv[ 1 ] )
+   video = sys.argv[ 1 ]
+   # If someone's home delete everything
+   if findIphones() or arpScan():
+      baseName, _ = os.path.splitext( os.path.basename( video ) )
+      files = [ video ] + pictures( picturesDir, baseName, all=True )
+      for f in files:
+   	 os.remove( f )
+   else:
+      sendEmail( video )
 
 if __name__ == "__main__":
     main()

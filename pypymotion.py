@@ -24,6 +24,19 @@ from stat import S_ISREG, ST_CTIME, ST_MODE
 from datetime import datetime
 import ConfigParser
 import findmyiphone
+import logging, traceback
+
+logger = logging.getLogger( 'pypymotion' )
+hdlr = logging.FileHandler( '/var/tmp/pypymotion.log' )
+formatter = logging.Formatter( '%(asctime)s %(levelname)s %(message)s' )
+hdlr.setFormatter( formatter )
+logger.addHandler( hdlr ) 
+logger.setLevel( logging.INFO )
+
+def loggerExceptHook( t, v, tb ):
+   logger.error( traceback.format_exception( t, v, tb ) )
+
+sys.excepthook = loggerExceptHook
 
 configFile = '/etc/pypymotion/pypymotion.cfg'
 config = ConfigParser.ConfigParser( allow_no_value=True )
@@ -105,20 +118,29 @@ def findIphones():
    for fmiAccount in fmiAccounts:
       fmi = findmyiphone.FindMyIPhone( fmiAccount[ 'username' ],
       				       fmiAccount[ 'password' ] )
+      logger.info( '%d devices for %s' % ( len( fmi.devices ),
+					   fmiAccount[ 'username' ] ) )
       for i, device in enumerate( fmi.devices ):
       	 if device.name in fmiAccount[ 'devices' ]:
+	    logger.info( 'Found %s in configuration, locating' % device.name )
 	    location = None
 	    try:
                location = fmi.locate( i, max_wait=90 )
 	    except Exception:
-	       print 'No location for', device.name
-	    if location:
-	       for x in [ 'latitude', 'longitude' ]:
-	          distanceFromHome = abs( location[ x ] - home[ x ] )
-	          if distanceFromHome < 0.001:
-		     return device.name
-	    else:
-	       print 'No location for', device.name
+	       logger.error( 'No location for ' + device.name )
+	       continue
+	    logger.info( '%s is at %f,%f' % ( device.name, location[ 'latitude' ],
+					      location[ 'longitude' ] ) )
+	    for x in [ 'latitude', 'longitude' ]:
+	       distanceFromHome = abs( location[ x ] - home[ x ] )
+	       if distanceFromHome < 0.001:
+		  logger.info( '%s is close: %f' % ( device.name,
+						     distanceFromHome ) )
+		  return device.name
+	       logger.info( '%s is far: %f' % ( device.name,
+						distanceFromHome ) )
+	 else:
+	    logger.info( 'Skipping ' + device.name )
    return None
 
 def df():
@@ -131,13 +153,9 @@ def videoDuration( video ):
    result = subprocess.Popen( [ 'ffprobe', video ],
 	 		      stdout = subprocess.PIPE,
 			      stderr = subprocess.STDOUT )
-   try:
-      duration = [ x for x in result.stdout.readlines() if "Duration" in x ]
-      duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
-      return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
-   except IndexError:
-      sys.stderr.write( '%s not found\n' % video )
-      sys.exit( 1 )
+   duration = [ x for x in result.stdout.readlines() if "Duration" in x ]
+   duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
+   return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
 
 def pictures( dirpath, baseName, all=False ):
    # Consider only the id (22) in 22-20130312074653-00
@@ -217,6 +235,7 @@ def sendEmail( attachment ):
 
 def main():
    if len( sys.argv ) != 2:
+      logger.error( sys.argv )
       print usage()
       sys.exit( 1 )
    video = sys.argv[ 1 ]
@@ -226,18 +245,11 @@ def main():
    if iphones or macs:
       baseName, _ = os.path.splitext( os.path.basename( video ) )
       files = [ video ] + pictures( picturesDir, baseName, all=True )
-      with open( picturesDir + '/motion.log', 'a' ) as log:
-	 cause = []
-         if iphones:
-	    cause.append( iphones )
-	 if macs:
-	    cause.append( macs )
-	 for line in cause + files:
-            log.write( line + '\n' )
       for f in files:
+	 logger.warning( 'Removing ' + f )
    	 os.remove( f )
    else:
       sendEmail( video )
 
 if __name__ == "__main__":
-    main()
+   main()

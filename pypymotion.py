@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # This file is part of pypymotion.
 #
 # pypymotion is free software: you can redistribute it and/or modify
@@ -12,8 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pypymotion.  If not, see <http://www.gnu.org/licenses/>.
-
-#!/usr/bin/env python
 
 import os, re, smtplib, subprocess, sys, time
 from email.mime.multipart import MIMEMultipart
@@ -89,15 +89,15 @@ def usage():
 
 def arpScan():
    if not network or not presenceMacs:
-      return False
+      return None
    result = subprocess.Popen( [ 'sudo', 'arp-scan', network ],
 	 		      stdout=subprocess.PIPE,
 			      stderr=subprocess.STDOUT ).stdout.readlines()
    for addr in result:
       for i in presenceMacs:
 	 if i in addr:
-	    return True
-   return False
+	    return i
+   return None
 
 def findIphones():
    if not home:
@@ -114,12 +114,12 @@ def findIphones():
 	       print 'No location for', device.name
 	    if location:
 	       for x in [ 'latitude', 'longitude' ]:
-	          distanceFromHome = abs( location[ x ] - home[ x ] ) * 10000000000
-	          if distanceFromHome <= location[ 'accuracy' ]:
-		     return True
+	          distanceFromHome = abs( location[ x ] - home[ x ] )
+	          if distanceFromHome < 0.001:
+		     return device.name
 	    else:
 	       print 'No location for', device.name
-   return False
+   return None
 
 def df():
    result = subprocess.Popen( [ 'df', '-h', '-P', picturesDir ],
@@ -221,9 +221,19 @@ def main():
       sys.exit( 1 )
    video = sys.argv[ 1 ]
    # If someone's home delete everything
-   if findIphones() or arpScan():
+   iphones = findIphones()
+   macs = arpScan()
+   if iphones or macs:
       baseName, _ = os.path.splitext( os.path.basename( video ) )
       files = [ video ] + pictures( picturesDir, baseName, all=True )
+      with open( picturesDir + '/motion.log', 'a' ) as log:
+	 cause = []
+         if iphones:
+	    cause.append( iphones )
+	 if macs:
+	    cause.append( macs )
+	 for line in cause + files:
+            log.write( line + '\n' )
       for f in files:
    	 os.remove( f )
    else:

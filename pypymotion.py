@@ -280,7 +280,7 @@ def main():
       sys.exit( 1 )
    video = sys.argv[ 1 ]
    duration = videoDuration( video )
-   logger.info( 'Received a %ss video: %s' % ( duration, video ) )
+   logger.info( 'New video event: %s (%ss)' % ( video, duration ) )
    iphones = findIphones()
    macs = arpScan()
    # If someone's home delete everything

@@ -176,15 +176,17 @@ def videoDuration( video ):
 	       int( duration[ 2 ] ) )
 
 def logFiles( files, typeName='file(s)', prefix='Found ', suffix='',
-	      level=logging.INFO ):
+	      level=logging.INFO, detail=False ):
    # <prefix> <count> <typeName> (<first> to <last>)
    if not files:
       return
-   log = prefix + '%d %s (' % ( len( files ), typeName )
-   log += os.path.basename( files[ 0 ] )
-   if len( files ) > 1:
-      log += ' to ' + os.path.basename( files[ -1 ] )
-   log += ')' + suffix
+   log = prefix + '%d %s' % ( len( files ), typeName )
+   if detail:
+      log += os.path.basename( files[ 0 ] )
+      if len( files ) > 1:
+	 log += ' to ' + os.path.basename( files[ -1 ] )
+      log += ')'
+   log += suffix
    logger.info( log )
 
 def pictures( dirpath, baseName, all=False ):
@@ -197,8 +199,8 @@ def pictures( dirpath, baseName, all=False ):
    logFiles( pics, typeName='pic(s)' )
    if not all:
       pics = pics[ preCapture : preCapture + 5 ]
-   logFiles( pics, typeName='pic(s)', prefix='Selected ',
-	     suffix=' - %d/%d' % ( len( pics ), picsLen ) )
+      logFiles( pics, typeName='pic(s)', prefix='Selected ',
+		suffix=' (%d/%d)' % ( len( pics ), picsLen ), detail=True )
    return pics
 
 def convertForIos( src, dst ):

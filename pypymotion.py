@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pypymotion.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, re, smtplib, subprocess, sys, time
+import math, os, re, smtplib, subprocess, sys, time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -112,6 +112,21 @@ def arpScan():
 	    return i
    return None
 
+
+# Author: Wayne Dyck
+def distance( origin, destination ):
+   lat1, lon1 = origin
+   lat2, lon2 = destination
+   radius = 6371 # km
+   dlat = math.radians( lat2 - lat1 )
+   dlon = math.radians( lon2 - lon1 )
+   a = math.sin( dlat / 2 ) * math.sin( dlat / 2 ) + \
+       math.cos( math.radians( lat1 ) ) * math.cos( math.radians( lat2 ) ) * \
+       math.sin( dlon / 2 ) * math.sin( dlon / 2 )
+   c = 2 * math.atan2( math.sqrt( a ), math.sqrt( 1 - a ) )
+   d = radius * c
+   return d
+
 def findIphones():
    if not home:
       return False
@@ -131,14 +146,16 @@ def findIphones():
 	       continue
 	    logger.info( '%s is at %f,%f' % ( device.name, location[ 'latitude' ],
 					      location[ 'longitude' ] ) )
-	    for x in [ 'latitude', 'longitude' ]:
-	       distanceFromHome = abs( location[ x ] - home[ x ] )
-	       if distanceFromHome < 0.001:
-		  logger.info( '%s is close: %f' % ( device.name,
-						     distanceFromHome ) )
-		  return device.name
-	       logger.info( '%s is far: %f' % ( device.name,
-						distanceFromHome ) )
+	    distanceFromHome = distance( ( home[ 'latitude' ],
+					   home[ 'longitude' ] ),
+					 ( location[ 'latitude' ],
+					   location[ 'longitude' ] ) )
+	    if distanceFromHome < 0.1:
+	       logger.info( '%s is close (%f km)' % ( device.name,
+						  distanceFromHome ) )
+	       return device.name
+	    logger.info( '%s is far: (%f km)' % ( device.name,
+					     distanceFromHome ) )
 	 else:
 	    logger.info( 'Skipping ' + device.name )
    return None

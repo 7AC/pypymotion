@@ -175,9 +175,9 @@ def videoDuration( video ):
    return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + \
 	       int( duration[ 2 ] ) )
 
-def logFiles( files, typeName='file(s)', prefix='Found ', suffix='',
+def logFiles( files, typeName='file(s)', prefix='', suffix='',
 	      level=logging.INFO, detail=False ):
-   # <prefix> <count> <typeName> (<first> to <last>)
+   # <prefix> <count> <typeName> [(<first> to <last>)] <suffix>
    if not files:
       return
    log = prefix + '%d %s' % ( len( files ), typeName )
@@ -196,7 +196,6 @@ def pictures( dirpath, baseName, all=False ):
    					      if fn.endswith( picturesExt ) and \
 					         fn.startswith( baseName ) )
    picsLen = len( pics )
-   logFiles( pics, typeName='pic(s)' )
    if not all:
       pics = pics[ preCapture : preCapture + 5 ]
       logFiles( pics, typeName='pic(s)', prefix='Selected ',

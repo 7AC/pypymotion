@@ -150,8 +150,8 @@ def findIphones():
 					 ( location[ 'latitude' ],
 					   location[ 'longitude' ] ) )
 	    if distanceFromHome < 0.1:
-	       logger.info( '%s is close (%f km)' % ( device.name,
-						      distanceFromHome ) )
+	       logger.info( '%s is close (%f m)' % ( device.name,
+						     distanceFromHome * 1000 ) )
 	       return device.name
 	    logger.info( '%s is far (%f km)' % ( device.name,
 						 distanceFromHome ) )

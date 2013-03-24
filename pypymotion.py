@@ -157,7 +157,8 @@ def videoDuration( video ):
    duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
    return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
 
-def logFiles( files, typeName='file(s)', prefix='Found ', level=logging.INFO ):
+def logFiles( files, typeName='file(s)', prefix='Found ', suffix='',
+	      level=logging.INFO ):
    # <prefix> <count> <typeName> (<first> to <last>)
    if not files:
       return
@@ -165,7 +166,7 @@ def logFiles( files, typeName='file(s)', prefix='Found ', level=logging.INFO ):
    log += os.path.basename( files[ 0 ] )
    if len( files ) > 1:
       log += ' to ' + os.path.basename( files[ -1 ] )
-   log += ')'
+   log += ')' + suffix
    logger.info( log )
 
 def pictures( dirpath, baseName, all=False ):
@@ -174,18 +175,21 @@ def pictures( dirpath, baseName, all=False ):
    pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) \
    					      if fn.endswith( picturesExt ) and \
 					         fn.startswith( baseName ) )
+   picsLen = len( pics )
    logFiles( pics, typeName='pic(s)' )
    if not all:
       pics = pics[ preCapture : preCapture + 5 ]
-   logFiles( pics, typeName='pic(s)', prefix='Selected ' )
+   logFiles( pics, typeName='pic(s)', prefix='Selected ',
+	     suffix=' - %d/%d' % ( len( pics ), picsLen ) )
    return pics
 
 def convertForIos( src, dst ):
+   logger.info( 'Converting video to %s' % dst )
    subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
 	 	     stderr=subprocess.STDOUT ).stdout.readlines()
    os.remove( src )
 
-def sendEmail( attachment ):
+def sendEmail( attachment, duration ):
    msg = MIMEMultipart()
    msg[ 'Subject' ] = 'motion has a video for you'
    msg[ 'From' ] = emailFrom
@@ -196,7 +200,6 @@ def sendEmail( attachment ):
       attachmentDir, attachmentFile = os.path.split( attachment )
       baseName, _ = os.path.splitext( attachmentFile )
       iosVideo = attachmentDir + '/' + baseName + '.mov'
-   duration = videoDuration( attachment )
    if iosCompatible:
       attachment = iosVideo
    pics = pictures( picturesDir, baseName )
@@ -222,12 +225,14 @@ def sendEmail( attachment ):
       fp.close()
       img.add_header( 'Content-ID', '<%s>' % os.path.basename( p ) )
       msg.attach( img )
+   logger.info( 'Emailing %d pics' % len( pics ) )
 
    if attachVideo:
       video = MIMEApplication( open( attachment, 'rb' ).read() )
       video.add_header( 'Content-Disposition', 'attachment', filename=os.path.basename( attachment ) )
       video.add_header( 'Content-ID', os.path.basename( attachment ) )
       msg.attach( video )
+      logger.info( 'Attaching video' )
 
    # Add an option for this
    mailServer = smtplib.SMTP( smtpAddress, smtpPort )
@@ -252,6 +257,8 @@ def main():
       print usage()
       sys.exit( 1 )
    video = sys.argv[ 1 ]
+   duration = videoDuration( video )
+   logger.info( 'Received a %ss video: %s' % ( duration, video ) )
    iphones = findIphones()
    macs = arpScan()
    # If someone's home delete everything
@@ -267,7 +274,7 @@ def main():
 	    logFiles( [ f ], prefix='Failed to remove ', level=logging.ERROR )
    # If noone's home notify
    else:
-      sendEmail( video )
+      sendEmail( video, duration )
 
 if __name__ == "__main__":
    main()

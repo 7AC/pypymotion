@@ -112,9 +112,8 @@ def arpScan():
 	    return i
    return None
 
-
-# Author: Wayne Dyck
 def distance( origin, destination ):
+   # Author: Wayne Dyck
    lat1, lon1 = origin
    lat2, lon2 = destination
    radius = 6371 # km
@@ -171,8 +170,10 @@ def videoDuration( video ):
 	 		      stdout = subprocess.PIPE,
 			      stderr = subprocess.STDOUT )
    duration = [ x for x in result.stdout.readlines() if "Duration" in x ]
-   duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
-   return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
+   duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].\
+	      split( '.' )[ 0 ].split( ':' )
+   return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + \
+	       int( duration[ 2 ] ) )
 
 def logFiles( files, typeName='file(s)', prefix='Found ', suffix='',
 	      level=logging.INFO ):
@@ -221,8 +222,11 @@ def sendEmail( attachment, duration ):
       attachment = iosVideo
    pics = pictures( picturesDir, baseName )
    embeddedPics = ''
-   html = '<html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head>'
-   html += '<body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space; ">'
+   html = '''
+<html>
+<head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head>
+<body style="word-wrap: break-word; -webkit-nbsp-mode: space; 
+             -webkit-line-break: after-white-space; ">'''
    if videoUrl:
       html += '<a href="%s/%s"><img src="%s/%s" ' % ( videoUrl,
       						      os.path.basename( attachment ),
@@ -246,7 +250,8 @@ def sendEmail( attachment, duration ):
 
    if attachVideo:
       video = MIMEApplication( open( attachment, 'rb' ).read() )
-      video.add_header( 'Content-Disposition', 'attachment', filename=os.path.basename( attachment ) )
+      video.add_header( 'Content-Disposition', 'attachment',
+			filename=os.path.basename( attachment ) )
       video.add_header( 'Content-ID', os.path.basename( attachment ) )
       msg.attach( video )
       logger.info( 'Attaching video' )

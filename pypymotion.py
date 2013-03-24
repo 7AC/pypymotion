@@ -157,12 +157,15 @@ def videoDuration( video ):
    duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
    return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
 
-def logFiles( files, typeName='pic(s)', prefix='Found ' ):
+def logFiles( files, typeName='file(s)', prefix='Found ', level=logging.INFO ):
    # <prefix> <count> <typeName> (<first> to <last>)
-   log = prefix + '%d %s (' % ( typeName, len( files ) )
+   if not files:
+      return
+   log = prefix + '%d %s (' % ( len( files ), typeName )
    log += os.path.basename( files[ 0 ] )
    if len( files ) > 1:
-      log += os.path.basename( files[ -1 ] )
+      log += ' to ' + os.path.basename( files[ -1 ] )
+   log += ')'
    logger.info( log )
 
 def pictures( dirpath, baseName, all=False ):
@@ -171,10 +174,10 @@ def pictures( dirpath, baseName, all=False ):
    pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) \
    					      if fn.endswith( picturesExt ) and \
 					         fn.startswith( baseName ) )
-   logFiles( pics )
+   logFiles( pics, typeName='pic(s)' )
    if not all:
-      return pics = [ preCapture : preCapture + 5 ]
-   logFiles( pics, 'Selected ' )
+      pics = pics[ preCapture : preCapture + 5 ]
+   logFiles( pics, typeName='pic(s)', prefix='Selected ' )
    return pics
 
 def convertForIos( src, dst ):
@@ -255,10 +258,13 @@ def main():
    if iphones or macs:
       baseName, _ = os.path.splitext( os.path.basename( video ) )
       pics = pictures( picturesDir, baseName, all=True )
-      logFiles( pics, prefix='Removing ' ):
-      logFiles( [ video ], typeName='video', prefix='Removing ' ):
+      logFiles( pics, typeName='pic(s)', prefix='Removing ' )
+      logFiles( [ video ], typeName='video', prefix='Removing ' )
       for f in [ video ] + pics:
-   	 os.remove( f )
+	 try:
+	    os.remove( f )
+	 except OSError, e:
+	    logFiles( [ f ], prefix='Failed to remove ', level=logging.ERROR )
    # If noone's home notify
    else:
       sendEmail( video )

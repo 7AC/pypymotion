@@ -154,7 +154,7 @@ def findIphones():
 	       logger.info( '%s is close (%f km)' % ( device.name,
 						  distanceFromHome ) )
 	       return device.name
-	    logger.info( '%s is far: (%f km)' % ( device.name,
+	    logger.info( '%s is far (%f km)' % ( device.name,
 					     distanceFromHome ) )
 	 else:
 	    logger.info( 'Skipping ' + device.name )

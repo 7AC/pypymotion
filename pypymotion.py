@@ -182,7 +182,7 @@ def logFiles( files, typeName='file(s)', prefix='', suffix='',
       return
    log = prefix + '%d %s' % ( len( files ), typeName )
    if detail:
-      log += os.path.basename( files[ 0 ] )
+      log += ' (' + os.path.basename( files[ 0 ] )
       if len( files ) > 1:
 	 log += ' to ' + os.path.basename( files[ -1 ] )
       log += ')'

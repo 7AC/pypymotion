@@ -157,10 +157,13 @@ def videoDuration( video ):
    duration = duration[ 0 ].split( ',' )[ 0 ].split( 'Duration: ' )[ 1 ].split( '.' )[ 0 ].split( ':' )
    return str( int( duration[ 0 ] ) * 3600 + int( duration[ 1 ] ) * 60 + int( duration[ 2 ] ) )
 
-def logPictures( pics, prefix='Found ' ):
-   logger.info( '%d pics (%s o %s)' % ( len( pics ),
-					os.path.basename( pics[ 0 ] ),
-					os.path.basename( pics[ -1 ] ) ) )
+def logFiles( files, typeName='pic(s)', prefix='Found ' ):
+   # <prefix> <count> <typeName> (<first> to <last>)
+   log = prefix + '%d %s (' % ( typeName, len( files ) )
+   log += os.path.basename( files[ 0 ] )
+   if len( files ) > 1:
+      log += os.path.basename( files[ -1 ] )
+   logger.info( log )
 
 def pictures( dirpath, baseName, all=False ):
    # Consider only the id (22) in 22-20130312074653-00
@@ -168,10 +171,10 @@ def pictures( dirpath, baseName, all=False ):
    pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) \
    					      if fn.endswith( picturesExt ) and \
 					         fn.startswith( baseName ) )
-   logPictures( pics )
+   logFiles( pics )
    if not all:
       return pics = [ preCapture : preCapture + 5 ]
-   logPictures( pics, 'Selected ' )
+   logFiles( pics, 'Selected ' )
    return pics
 
 def convertForIos( src, dst ):
@@ -246,16 +249,17 @@ def main():
       print usage()
       sys.exit( 1 )
    video = sys.argv[ 1 ]
-   # If someone's home delete everything
    iphones = findIphones()
    macs = arpScan()
+   # If someone's home delete everything
    if iphones or macs:
       baseName, _ = os.path.splitext( os.path.basename( video ) )
       pics = pictures( picturesDir, baseName, all=True )
-      logPictures( pics, prefix='Found ' ):
-      logger.warning( pics, 'Removing ' )
+      logFiles( pics, prefix='Removing ' ):
+      logFiles( [ video ], typeName='video', prefix='Removing ' ):
       for f in [ video ] + pics:
    	 os.remove( f )
+   # If noone's home notify
    else:
       sendEmail( video )
 

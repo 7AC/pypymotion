@@ -28,6 +28,7 @@ echo 'on_movie_end /path/to/pypymotion.py %f' >> /etc/motion/motion.conf
 Demo
 ----
 ```bash
+john@motionserver ~ $ cat /var/tmp/pypymotion.log
 2013-03-24 11:27:05,032 INFO New video event: /tmp/motion/video/119-20130324112546.avi (20s)
 2013-03-24 11:27:05,916 INFO 3 devices for appleuser@gmail.com
 2013-03-24 11:27:05,918 INFO Skipping John Doe’s iPad

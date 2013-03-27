@@ -191,7 +191,7 @@ def logFiles( files, typeName='file(s)', prefix='', suffix='',
 
 def pictures( dirpath, baseName, all=False ):
    # Consider only the id (22) in 22-20130312074653-00
-   baseName = baseNamei.split( '-' )[ 0 ]
+   baseName = baseName.split( '-' )[ 0 ]
    pics = sorted( os.path.join( dirpath, fn ) for fn in os.listdir( dirpath ) \
    					      if fn.endswith( picturesExt ) and \
 					         fn.startswith( baseName ) )

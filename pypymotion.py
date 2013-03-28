@@ -24,10 +24,12 @@ from stat import S_ISREG, ST_CTIME, ST_MODE
 from datetime import datetime
 import ConfigParser
 import findmyiphone
-import logging, traceback
+import logging, logging.handlers, traceback
 
 logger = logging.getLogger( 'pypymotion' )
-hdlr = logging.FileHandler( '/var/tmp/pypymotion.log' )
+hdlr = logging.handlers.RotatingFileHandler( '/var/tmp/pypymotion.log',
+					     maxBytes=1048576,
+					     backupCount=3 )
 formatter = logging.Formatter( '%(asctime)s %(levelname)s %(message)s' )
 hdlr.setFormatter( formatter )
 logger.addHandler( hdlr ) 
@@ -203,6 +205,8 @@ def pictures( dirpath, baseName, all=False ):
    return pics
 
 def convertForIos( src, dst ):
+   if src.endswith( '.mov' ):
+      return
    logger.info( 'Converting video to %s' % dst )
    subprocess.Popen( [ 'ffmpeg', '-i', src, dst ], stdout=subprocess.PIPE,
 	 	     stderr=subprocess.STDOUT ).stdout.readlines()

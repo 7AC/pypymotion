@@ -21,7 +21,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.application import MIMEApplication
 from stat import S_ISREG, ST_CTIME, ST_MODE
-from datetime import datetime
+import datetime
 import ConfigParser
 import findmyiphone
 import logging, logging.handlers, traceback
@@ -286,8 +286,15 @@ def main():
    video = sys.argv[ 1 ]
    duration = videoDuration( video )
    logger.info( 'New video event: %s (%ss)' % ( video, duration ) )
-   iphones = findIphones()
-   macs = arpScan()
+   now = datetime.datetime.now()
+   # Ignore presence at night
+   if now.hour >= 1 and now.hour <= 8:
+      logger.info( 'Night mode on' )
+      iphones = False
+      macs = False
+   else:
+      iphones = findIphones()
+      macs = arpScan()
    # If someone's home delete everything
    if iphones or macs:
       baseName, _ = os.path.splitext( os.path.basename( video ) )

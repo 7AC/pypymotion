@@ -288,7 +288,7 @@ def main():
    logger.info( 'New video event: %s (%ss)' % ( video, duration ) )
    now = datetime.datetime.now()
    # Ignore presence at night
-   if now.hour >= 1 and now.hour <= 7:
+   if now.hour >= 1 and now.hour <= 6:
       logger.info( 'Night mode on' )
       iphones = False
       macs = False

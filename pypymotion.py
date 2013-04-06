@@ -23,7 +23,6 @@ from email.mime.application import MIMEApplication
 from stat import S_ISREG, ST_CTIME, ST_MODE
 import datetime
 import ConfigParser
-import findmyiphone
 import logging, logging.handlers, traceback
 
 logger = logging.getLogger( 'pypymotion' )
@@ -58,6 +57,13 @@ home = None
 try:
    home = { 'latitude' : config.getfloat( 'General', 'home_lat' ),
    	    'longitude' : config.getfloat( 'General', 'home_lon' ) }
+except ConfigParser.NoOptionError:
+   pass
+forceOnStart = None
+forceOnEnd = None
+try:
+   forceOnStart = config.getint( 'General', 'force_on_start' )
+   forceOnEnd = config.getint( 'General', 'force_on_end' )
 except ConfigParser.NoOptionError:
    pass
 videoUrl = None
@@ -131,6 +137,7 @@ def distance( origin, destination ):
 def findIphones():
    if not home:
       return False
+   import findmyiphone
    for fmiAccount in fmiAccounts:
       fmi = findmyiphone.FindMyIPhone( fmiAccount[ 'username' ],
       				       fmiAccount[ 'password' ] )
@@ -287,9 +294,10 @@ def main():
    duration = videoDuration( video )
    logger.info( 'New video event: %s (%ss)' % ( video, duration ) )
    now = datetime.datetime.now()
-   # Ignore presence at night
-   if now.hour >= 1 and now.hour <= 6:
-      logger.info( 'Night mode on' )
+   # Ignore presence if force_on specified
+   if forceOnStart and forceOnEnd and \
+      now.hour >= forceOnStart and now.hour < forceOnEnd:
+      logger.info( 'Force mode, ignoring presence info' )
       iphones = False
       macs = False
    else:
